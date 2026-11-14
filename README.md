@@ -45,6 +45,16 @@ All figures use the gold table (first encounter per patient, n = 69,987; overall
 Prior admissions are a stronger signal than age. This is an association, not proof of cause; the statistical analysis adjusts for other factors.
 
 ## 4. Statistical analysis
+### Risk segments (age and prior admissions combined)
+| Segment | Patients | 30-day readmission rate | Share of all readmissions |
+|---|---|---|---|
+| Aged 70+ with prior admission | 3,935 | 16.3% | 10.2% |
+| Under 70 with prior admission | 4,260 | 14.6% | 9.9% |
+| Aged 70+, no prior admission | 26,685 | 9.5% | 40.4% |
+| Everyone else | 35,107 | 7.1% | 39.5% |
+
+Patients with any prior admission are 11.7% of the population but 20.1% of early readmissions, with a rate of about 15%, around 1.7x the overall 9.0%. Prior admission history separates risk more clearly than age: under-70s with a prior admission (14.6%) are readmitted far more often than 70+ patients with none (9.5%). Targeted follow-up for patients with a prior admission is therefore more efficient than targeting by age.
+
 _(Hypothesis tests, logistic regression with odds ratios, confidence intervals. Link to /analysis.)_
 
 ## 5. Dashboard
