@@ -2,13 +2,13 @@
 
 > Which diabetic patients are most likely to be readmitted within 30 days, what drives it, and what could reducing it save?
 
-- **Tools:** Databricks (SQL), Power BI (DAX), Python/SQL for statistics
+- **Tools:** Databricks (SQL, Python), Power BI (DAX), statsmodels for statistics
 - **Data:** Diabetes 130-US Hospitals (1999-2008), 101,766 encounters, 130 hospitals
 
 ## 1. Business problem
 Unplanned 30-day readmissions are costly for hospitals and a marker of care quality. This project identifies which patient groups are at highest risk and quantifies the potential saving from targeted follow-up.
 
-**Headline result:** Patients with 3+ prior admissions are 3.3x more likely to be readmitted within 30 days than patients with none (26.5% vs 8.1%). The 12% of patients with at least one prior admission account for about 20% of all early readmissions, making them the natural group for targeted follow-up.
+**Headline result:** Patients with 3+ prior admissions are 3.25x as likely to be readmitted within 30 days as patients with none (26.5% vs 8.1%; 95% CI for the risk ratio 2.91 to 3.64), and the effect holds after adjusting for age, diagnosis, length of stay and other factors (adjusted odds ratio 3.70). The 12% of patients with at least one prior admission account for about 20% of all early readmissions, making them the natural group for targeted follow-up.
 
 ## 2. Data pipeline (Bronze / Silver / Gold)
 | Layer | Table | What happens |
@@ -79,10 +79,44 @@ Patients with any prior admission are 11.7% of the population but 20.1% of early
 | Digestive | 6,488 | 8.0% |
 | Respiratory | 9,491 | 7.3% |
 
-Diagnosis group separates risk much less than prior admissions (7.3% to 10.8%, versus 8.1% to 26.5%). Circulatory diagnoses are the largest group, with about a third of all early readmissions, but their rate (9.7%) is close to the overall 9.0%. Whether the differences are statistically significant is tested in the next section.
+Diagnosis group separates risk much less than prior admissions (7.3% to 10.8%, versus 8.1% to 26.5%). Circulatory diagnoses are the largest group, with about a third of all early readmissions, but their rate (9.7%) is close to the overall 9.0%.
 
 ## 4. Statistical analysis
-_(Hypothesis tests, logistic regression with odds ratios, confidence intervals. Link to /analysis.)_
+Python (pandas, scipy, statsmodels) on the gold table (n = 69,987). The notebook is in [`/analysis`](analysis).
+
+### Tests of association
+- **Chi-square, prior admissions (0, 1, 2, 3+) vs readmission:** chi-square = 664.6, p < 0.001.
+- **Chi-square, age band vs readmission:** chi-square = 189.0, p < 0.001.
+- **Risk ratio, 3+ prior admissions vs none:** 3.25 (95% CI 2.91 to 3.64).
+
+With about 70,000 patients even small differences are statistically significant, so effect sizes and confidence intervals matter more than p-values alone.
+
+### Logistic regression (adjusted odds ratios)
+Outcome: readmitted within 30 days. Predictors: prior admissions, age group, primary diagnosis group, length of stay, number of medications, number of diagnoses, emergency visits. Odds ratios are adjusted for all other predictors.
+
+| Predictor | Odds ratio | 95% CI |
+|---|---|---|
+| 1 prior admission (vs 0) | 1.56 | 1.43 to 1.69 |
+| 2 prior admissions (vs 0) | 2.36 | 2.07 to 2.70 |
+| 3+ prior admissions (vs 0) | 3.70 | 3.17 to 4.31 |
+| Age 50-69 (vs under 50) | 1.10 | 1.01 to 1.20 |
+| Age 70+ (vs under 50) | 1.38 | 1.26 to 1.50 |
+| Injury diagnosis (vs Other) | 1.20 | 1.07 to 1.34 |
+| Diabetes diagnosis (vs Other) | 1.14 | 1.02 to 1.28 |
+| Circulatory diagnosis (vs Other) | 1.10 | 1.01 to 1.19 |
+| Respiratory diagnosis (vs Other) | 0.82 | 0.74 to 0.90 |
+| Each extra day in hospital | 1.04 | 1.03 to 1.05 |
+| Each extra diagnosis recorded | 1.05 | 1.03 to 1.06 |
+| Each extra emergency visit | 1.08 | 1.04 to 1.13 |
+
+Digestive, genitourinary, musculoskeletal and neoplasm diagnoses, and the number of medications, showed no clear effect (confidence intervals include 1.0).
+
+### Interpretation
+- Prior admissions are by far the strongest driver, with a clear dose-response: odds rise at each step from 1 to 3+ admissions, even after adjusting for age, diagnosis and length of stay.
+- Age 70+, extra emergency visits, extra diagnoses and longer stays each add a smaller but real increase in risk.
+- Diagnosis matters modestly: injury, diabetes and circulatory admissions are somewhat higher risk, respiratory admissions lower.
+- An odds ratio is not the same as "times as likely". The plain-language figure is the risk ratio (3.25x); the odds ratio (3.70) is the adjusted model estimate.
+- These are associations in observational data, not proof of cause.
 
 ## 5. Dashboard
 _(Screenshot + link. Pages: Executive summary, Drivers, High-risk segments.)_
@@ -94,11 +128,12 @@ _(Which segments to target, expected readmissions avoided, estimated saving with
 - Data covers 1999-2008 and US hospitals only.
 - No cost data in the dataset, so savings are scenario-based using stated assumptions.
 - First-encounter filtering reduces sample size but keeps observations independent.
+- Observational data: results show association, not causation.
 
 ## Repository structure
 ```
 /sql          Bronze, silver, gold and cohort analysis scripts
-/analysis     Statistical analysis (notebook or script)
+/analysis     Statistical analysis (Python notebook)
 /dashboard    Power BI file and screenshots
 /docs         One-page executive brief
 README.md
