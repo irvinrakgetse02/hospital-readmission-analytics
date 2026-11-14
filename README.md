@@ -2,13 +2,13 @@
 
 > Which diabetic patients are most likely to be readmitted within 30 days, what drives it, and what could reducing it save?
 
-**Tools:** Databricks (SQL), Power BI (DAX), Python/SQL for statistics
-**Data:** Diabetes 130-US Hospitals (1999-2008), 101,766 encounters, 130 hospitals
+- **Tools:** Databricks (SQL), Power BI (DAX), Python/SQL for statistics
+- **Data:** Diabetes 130-US Hospitals (1999-2008), 101,766 encounters, 130 hospitals
 
 ## 1. Business problem
 Unplanned 30-day readmissions are costly for hospitals and a marker of care quality. This project identifies which patient groups are at highest risk and quantifies the potential saving from targeted follow-up.
 
-**Headline result:** _(fill in at the end: e.g. "Patients with X and Y are 1.8x more likely to be readmitted; targeting them could avoid ~N readmissions per 10,000 patients.")_
+**Headline result:** Patients with 3+ prior admissions are 3.3x more likely to be readmitted within 30 days than patients with none (26.5% vs 8.1%). The 12% of patients with at least one prior admission account for about 20% of all early readmissions, making them the natural group for targeted follow-up.
 
 ## 2. Data pipeline (Bronze / Silver / Gold)
 | Layer | Table | What happens |
@@ -28,7 +28,21 @@ Unplanned 30-day readmissions are costly for hospitals and a marker of care qual
 - **Class imbalance:** Only 9% of patients are positive, so accuracy is misleading. Results are reported with recall, precision and PR-AUC.
 
 ## 3. SQL analysis
-_(Cohort comparisons: readmission rate by age, diagnosis group, length of stay, medication change, prior inpatient visits. Link to /sql.)_
+All figures use the gold table (first encounter per patient, n = 69,987; overall 30-day readmission rate 9.0%).
+
+### Readmission rate by age
+- Rates are about 7% for ages 20-60, rising to 10.2% (70-80) and 10.8% (80-90).
+- Groups under 20 have fewer than 700 patients, so their rates are not reliable.
+
+### Readmission rate by prior inpatient admissions
+| Prior admissions | Patients | 30-day readmission rate |
+|---|---|---|
+| 0 | 61,792 | 8.1% |
+| 1 | 5,798 | 12.9% |
+| 2 | 1,501 | 18.5% |
+| 3+ | 896 | 26.5% |
+
+Prior admissions are a stronger signal than age. This is an association, not proof of cause; the statistical analysis adjusts for other factors.
 
 ## 4. Statistical analysis
 _(Hypothesis tests, logistic regression with odds ratios, confidence intervals. Link to /analysis.)_
