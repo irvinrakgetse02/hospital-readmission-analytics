@@ -23,16 +23,28 @@ Unplanned 30-day readmissions are costly for hospitals and a marker of care qual
 - _(How ICD-9 diagnosis codes were grouped.)_
 
 ### Key design decisions
-- **Target:** `target_readmit_early` = readmitted in under 30 days. Chosen over "any readmission" (47% positive) because it is the standard, actionable business definition.
-- **One encounter per patient:** The dataset has 99,340 encounters but only 69,987 patients. Repeat encounters are not independent, so the analysis uses each patient's first encounter to avoid overstating statistical certainty.
+- **Target:** `target_readmit_early` = readmitted in under 30 days. Chosen over "any readmission" (47% of encounters) because it is the standard, actionable business definition.
+- **One encounter per patient:** The silver table has 99,340 encounters but only 69,987 patients, so about 29,000 encounters belong to patients already counted. Repeat encounters are not independent, so the analysis uses each patient's first encounter to avoid overstating statistical certainty. The early readmission rate is 11.4% of encounters (11,314 of 99,340) before this step and 9.0% of patients (6,285 of 69,987) after it.
 - **Class imbalance:** Only 9% of patients are positive, so accuracy is misleading. Results are reported with recall, precision and PR-AUC.
 
 ## 3. SQL analysis
-All figures use the gold table (first encounter per patient, n = 69,987; overall 30-day readmission rate 9.0%).
+All figures use the gold table (first encounter per patient, n = 69,987; overall 30-day readmission rate 9.0%). The queries are in [`/sql/04_cohort_analysis.sql`](sql/04_cohort_analysis.sql).
 
 ### Readmission rate by age
-- Rates are about 7% for ages 20-60, rising to 10.2% (70-80) and 10.8% (80-90).
-- Groups under 20 have fewer than 700 patients, so their rates are not reliable.
+| Age band | Patients | 30-day readmission rate |
+|---|---|---|
+| 0-10 | 153 | 2.0% |
+| 10-20 | 534 | 4.9% |
+| 20-30 | 1,121 | 7.4% |
+| 30-40 | 2,692 | 7.0% |
+| 40-50 | 6,828 | 7.4% |
+| 50-60 | 12,351 | 7.1% |
+| 60-70 | 15,688 | 9.0% |
+| 70-80 | 17,749 | 10.2% |
+| 80-90 | 11,110 | 10.8% |
+| 90-100 | 1,761 | 9.5% |
+
+Rates are about 7% for ages 20-60 and rise to 10.2% (70-80) and 10.8% (80-90). Groups under 20 have fewer than 700 patients, so their rates are not reliable.
 
 ### Readmission rate by prior inpatient admissions
 | Prior admissions | Patients | 30-day readmission rate |
@@ -44,7 +56,6 @@ All figures use the gold table (first encounter per patient, n = 69,987; overall
 
 Prior admissions are a stronger signal than age. This is an association, not proof of cause; the statistical analysis adjusts for other factors.
 
-## 4. Statistical analysis
 ### Risk segments (age and prior admissions combined)
 | Segment | Patients | 30-day readmission rate | Share of all readmissions |
 |---|---|---|---|
@@ -55,6 +66,22 @@ Prior admissions are a stronger signal than age. This is an association, not pro
 
 Patients with any prior admission are 11.7% of the population but 20.1% of early readmissions, with a rate of about 15%, around 1.7x the overall 9.0%. Prior admission history separates risk more clearly than age: under-70s with a prior admission (14.6%) are readmitted far more often than 70+ patients with none (9.5%). Targeted follow-up for patients with a prior admission is therefore more efficient than targeting by age.
 
+### Readmission rate by primary diagnosis group
+| Diagnosis group | Patients | 30-day readmission rate |
+|---|---|---|
+| Injury | 4,694 | 10.8% |
+| Circulatory | 21,389 | 9.7% |
+| Diabetes | 5,748 | 9.1% |
+| Neoplasms | 2,538 | 9.1% |
+| Other | 12,134 | 9.0% |
+| Genitourinary | 3,441 | 9.0% |
+| Musculoskeletal | 4,064 | 8.4% |
+| Digestive | 6,488 | 8.0% |
+| Respiratory | 9,491 | 7.3% |
+
+Diagnosis group separates risk much less than prior admissions (7.3% to 10.8%, versus 8.1% to 26.5%). Circulatory diagnoses are the largest group, with about a third of all early readmissions, but their rate (9.7%) is close to the overall 9.0%. Whether the differences are statistically significant is tested in the next section.
+
+## 4. Statistical analysis
 _(Hypothesis tests, logistic regression with odds ratios, confidence intervals. Link to /analysis.)_
 
 ## 5. Dashboard
@@ -70,7 +97,7 @@ _(Which segments to target, expected readmissions avoided, estimated saving with
 
 ## Repository structure
 ```
-/sql          Bronze, silver and gold scripts
+/sql          Bronze, silver, gold and cohort analysis scripts
 /analysis     Statistical analysis (notebook or script)
 /dashboard    Power BI file and screenshots
 /docs         One-page executive brief
